@@ -1,3 +1,5 @@
+makeFileDir := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
 postgres:
 	docker run --name postgres -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:alpine
 
@@ -13,4 +15,17 @@ migrateup:
 migratedown:
 	migrate -path db/migration -database "postgres://root:secret@localhost:5432/gnb?sslmode=disable" -verbose down
 
-.PHONY: postgres createdb dropdb migrateup migratedown
+
+
+sqlc-init:
+	docker run --rm -v $(makeFileDir):/src -w /src sqlc/sqlc init
+
+sqlc-compile:
+	docker run --rm -v $(makeFileDir):/src -w /src sqlc/sqlc compile
+
+sqlc-generate:
+	docker run --rm -v $(makeFileDir):/src -w /src sqlc/sqlc generate
+
+
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc-generate sqlc-init sqlc-compile
