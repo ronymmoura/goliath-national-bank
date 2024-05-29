@@ -2,7 +2,7 @@
 
 INSERT INTO accounts (
   owner,
-  ballance,
+  balance,
   currency
 )
 VALUES (
@@ -18,17 +18,19 @@ FROM accounts
 WHERE id = $1
 LIMIT 1;
 
--- name: GetAccounts :many
+-- name: ListAccounts :many
 SELECT *
 FROM accounts
+WHERE owner = $1
 ORDER BY id
-LIMIT $1
-OFFSET $2;
+LIMIT $2
+OFFSET $3;
 
--- name: UpdateAccount :exec
+-- name: UpdateAccount :one
 UPDATE accounts
-SET ballance = $2
-WHERE id = $1;
+SET balance = $2
+WHERE id = $1
+RETURNING *;
 
 -- name: DeleteAccount :exec
 DELETE FROM accounts
