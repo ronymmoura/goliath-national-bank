@@ -16,11 +16,8 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      # Label used to access the service container
       postgres:
-        # Docker Hub image
         image: postgres
-        # Provide the password for postgres
         env:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: secret
@@ -32,7 +29,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          # Maps tcp port 5432 on service container to the host
           - 5432:5432
 
     steps:
@@ -46,7 +42,7 @@ jobs:
     - name: Setup golang-migrate
       run: |
         curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.1/migrate.linux-amd64.tar.gz | tar xvz
-        sudo mv migrate.linux-amd64 /usr/bin/migrate
+        sudo mv migrate /usr/bin/migrate
         which migrate
 
     - name: Run migrations
