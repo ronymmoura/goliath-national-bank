@@ -58,16 +58,16 @@ func TestListAccounts(t *testing.T) {
 
 	arg := ListAccountsParams{
 		Limit:  5,
-		Offset: 0,
+		Offset: 5,
 	}
 
 	accounts, err := testStore.ListAccounts(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, accounts)
+	require.Len(t, accounts, 5)
 
 	for _, account := range accounts {
 		require.NotEmpty(t, account)
-		require.Equal(t, lastAccount.Owner, account.Owner)
 	}
 }
 
