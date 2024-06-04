@@ -5,6 +5,9 @@ setup: postgres createdb migrateup
 test:
 	go test -cover ./...
 
+server:
+	go run main.go
+
 # DB
 postgres:
 	docker run --name postgres -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:alpine
@@ -35,4 +38,4 @@ sqlc-generate:
 
 .PHONY: postgres createdb dropdb migrateup migratedown 
 	sqlc-generate sqlc-init sqlc-compile 
-	test
+	test server
