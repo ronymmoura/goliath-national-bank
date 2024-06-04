@@ -36,6 +36,10 @@ sqlc-generate:
 	docker run --rm -v $(makeFileDir):/src -w /src sqlc/sqlc generate
 
 
+# MOCK
+mock:
+	mockgen -package mockdb -destination db/mock/store.go github.com/ronymmoura/goliath-national-bank/db/sqlc Store
+
 .PHONY: postgres createdb dropdb migrateup migratedown 
 	sqlc-generate sqlc-init sqlc-compile 
-	test server
+	test server mock
