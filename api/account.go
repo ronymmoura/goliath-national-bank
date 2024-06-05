@@ -4,13 +4,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	db "github.com/ronymmoura/goliath-national-bank/db/sqlc"
 )
 
 type CreateAccountRequest struct {
-	Owner    string `json:"owner" binding:"required"`
-	Currency string `json:"currency" binding:"required,oneof=USD EUR CAD BRL"`
+	UserID   uuid.UUID `json:"user_id" binding:"required"`
+	Currency string    `json:"currency" binding:"required,oneof=USD EUR CAD BRL"`
 }
 
 func (server *Server) createAccount(ctx *gin.Context) {
@@ -22,7 +23,7 @@ func (server *Server) createAccount(ctx *gin.Context) {
 	}
 
 	arg := db.CreateAccountParams{
-		Owner:    req.Owner,
+		UserID:   req.UserID,
 		Currency: req.Currency,
 		Balance:  0,
 	}
@@ -64,7 +65,7 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 }
 
 type GetAccountRequest struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
+	AccountID int64 `uri:"account_id" binding:"required,min=1"`
 }
 
 func (server *Server) getAccount(ctx *gin.Context) {
@@ -75,7 +76,7 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		return
 	}
 
-	account, err := server.store.GetAccount(ctx, req.ID)
+	account, err := server.store.GetAccount(ctx, req.AccountID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))

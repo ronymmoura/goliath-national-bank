@@ -1,21 +1,55 @@
+@host_address = http://0.0.0.0:8080
+@content_type = application/json
+
+### Login Request
+# @name authRequest
+POST {{host_address}}/auth/login
+Content-Type: {{content_type}}
+
+{
+  "email": "test@test.com",
+  "password": "123"
+}
+
+@authToken = {{authRequest.response.body.$.access_token}}
+
+### Create User
+POST {{host_address}}/users
+Content-Type: {{content_type}}
+
+{
+  "hashed_password": "123",
+  "full_name": "Rony Moura",
+  "email": "test@test.com"
+}
+
+### Get User
+GET {{host_address}}/users/355f74a2-7e47-4db4-82bf-3bdb0539a71d
+Content-Type: {{content_type}}
+
+### Get Accounts
 GET http://0.0.0.0:8080/accounts?page=1&page_size=10
+Content-Type: {{content_type}}
 
 ###
 
-GET http://0.0.0.0:8080/accounts/494
+GET http://0.0.0.0:8080/accounts/110
+Content-Type: {{content_type}}
 
 ###
 
 POST http://0.0.0.0:8080/accounts
+Content-Type: {{content_type}}
 
 {
-  "owner": "Rony",
+  "user_id": "355f74a2-7e47-4db4-82bf-3bdb0539a71d",
   "currency": "USD"
 }
 
 ###
 
 POST http://0.0.0.0:8080/transfers
+Content-Type: {{content_type}}
 
 {
   "from_account_id": 178,

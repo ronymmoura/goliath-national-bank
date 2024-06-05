@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	mockdb "github.com/ronymmoura/goliath-national-bank/db/mock"
 	db "github.com/ronymmoura/goliath-national-bank/db/sqlc"
@@ -108,7 +109,7 @@ func TestGetAccountAPI(t *testing.T) {
 func randomAccount() db.Account {
 	return db.Account{
 		ID:       util.RandomInt(1, 1000),
-		Owner:    util.RandomOwner(),
+		UserID:   uuid.New(),
 		Balance:  util.RandomMoney(),
 		Currency: util.RandomCurrency(),
 	}

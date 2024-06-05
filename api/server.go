@@ -20,8 +20,11 @@ func NewServer(store db.Store) *Server {
 		v.RegisterValidation("currency", validCurrency)
 	}
 
+	router.GET("users/:user_id", server.getUser)
+	router.POST("users", server.createUser)
+
 	router.GET("accounts", server.listAccounts)
-	router.GET("accounts/:id", server.getAccount)
+	router.GET("accounts/:account_id", server.getAccount)
 	router.POST("accounts", server.createAccount)
 
 	router.POST("transfers", server.createTransfer)
