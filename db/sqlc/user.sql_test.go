@@ -12,9 +12,13 @@ import (
 )
 
 func createRandomUser(t *testing.T) User {
+	hashedPassword, err := util.HashPassword(util.RandomString(64))
+	require.NoError(t, err)
+	require.NotEmpty(t, hashedPassword)
+
 	arg := CreateUserParams{
 		ID:             uuid.New(),
-		HashedPassword: util.RandomString(64),
+		HashedPassword: hashedPassword,
 		FullName:       util.RandomString(10),
 		Email:          util.RandomEmail(),
 	}
@@ -29,7 +33,7 @@ func createRandomUser(t *testing.T) User {
 	require.Equal(t, arg.Email, user.Email)
 
 	require.NotZero(t, user.CreatedAt)
-	require.NotZero(t, user.PasswordChangedAt)
+	require.True(t, user.PasswordChangedAt.IsZero())
 
 	return user
 }
@@ -96,11 +100,15 @@ func TestEditUser(t *testing.T) {
 }
 
 func TestEditUserPassword(t *testing.T) {
+	hashedPassword, err := util.HashPassword(util.RandomString(64))
+	require.NoError(t, err)
+	require.NotEmpty(t, hashedPassword)
+
 	createdUser := createRandomUser(t)
 
 	arg := UpdateUserPasswordParams{
 		ID:                createdUser.ID,
-		HashedPassword:    util.RandomString(64),
+		HashedPassword:    hashedPassword,
 		PasswordChangedAt: time.Now(),
 	}
 

@@ -18,9 +18,9 @@ POST {{host_address}}/users
 Content-Type: {{content_type}}
 
 {
-  "hashed_password": "123",
+  "password": "123",
   "full_name": "Rony Moura",
-  "email": "test@test.com"
+  "email": "test1@test.com"
 }
 
 ### Get User
