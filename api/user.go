@@ -13,9 +13,9 @@ import (
 )
 
 type CreateUserRequest struct {
-	Password string `json:"password" binding:"required"`
+	Password string `json:"password" binding:"required,min=6"`
 	FullName string `json:"full_name" binding:"required"`
-	Email    string `json:"email" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
 }
 
 type CreateUserResponse struct {
@@ -77,6 +77,14 @@ type GetUserRequest struct {
 	UserID string `uri:"user_id" binding:"required,uuid"`
 }
 
+type GetUserResponse struct {
+	ID                uuid.UUID `json:"id"`
+	FullName          string    `json:"full_name"`
+	Email             string    `json:"email"`
+	PasswordChangedAt time.Time `json:"password_changed_at"`
+	CreatedAt         time.Time `json:"created_at"`
+}
+
 func (server *Server) getUser(ctx *gin.Context) {
 	var req GetUserRequest
 
@@ -102,5 +110,13 @@ func (server *Server) getUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, user)
+	response := GetUserResponse{
+		ID:                user.ID,
+		FullName:          user.FullName,
+		Email:             user.Email,
+		PasswordChangedAt: user.PasswordChangedAt,
+		CreatedAt:         user.CreatedAt,
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }
