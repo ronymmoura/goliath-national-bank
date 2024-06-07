@@ -73,12 +73,12 @@ func (server *Server) createUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, response)
 }
 
-type GetuserRequest struct {
+type GetUserRequest struct {
 	UserID string `uri:"user_id" binding:"required,uuid"`
 }
 
 func (server *Server) getUser(ctx *gin.Context) {
-	var req GetuserRequest
+	var req GetUserRequest
 
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
