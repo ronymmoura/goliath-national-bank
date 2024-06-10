@@ -71,7 +71,7 @@ func TestListAccounts(t *testing.T) {
 	}
 }
 
-func TestEditAccount(t *testing.T) {
+func TestUpdateAccount(t *testing.T) {
 	createdAccount := createRandomAccount(t)
 
 	arg := UpdateAccountParams{
@@ -80,6 +80,29 @@ func TestEditAccount(t *testing.T) {
 	}
 
 	account, err := testStore.UpdateAccount(context.Background(), arg)
+	require.NoError(t, err)
+	require.NotEmpty(t, account)
+
+	require.Equal(t, createdAccount.ID, account.ID)
+	require.Equal(t, createdAccount.UserID, account.UserID)
+	require.Equal(t, arg.Balance, account.Balance)
+	require.Equal(t, createdAccount.Currency, account.Currency)
+	require.WithinDuration(t, createdAccount.CreatedAt, account.CreatedAt, time.Second)
+}
+
+func TestSelectAccountForUpdate(t *testing.T) {
+	createdAccount := createRandomAccount(t)
+
+	arg := UpdateAccountParams{
+		ID:      createdAccount.ID,
+		Balance: util.RandomMoney(),
+	}
+
+	account, err := testStore.GetAccountForUpdate(context.Background(), createdAccount.ID)
+	require.NoError(t, err)
+	require.NotEmpty(t, account)
+
+	account, err = testStore.UpdateAccount(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, account)
 

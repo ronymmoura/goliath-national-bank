@@ -7,6 +7,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func TestPasswordError(t *testing.T) {
+	password := RandomString(73)
+
+	_, err := HashPassword(password)
+	require.Error(t, err)
+}
+
 func TestPassword(t *testing.T) {
 	password := RandomString(6)
 

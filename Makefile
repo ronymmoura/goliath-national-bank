@@ -4,7 +4,11 @@ DB_URL := postgres://root:secret@localhost:5432/gnb?sslmode=disable
 setup: postgres createdb migrateup
 
 test:
-	go test -cover ./...
+	go test -cover -coverprofile=c.out ./...
+
+test-coverage: |
+	go test -cover -coverprofile=c.out ./...
+	go tool cover -html=c.out -o coverage.html
 
 server:
 	go run main.go
@@ -49,4 +53,4 @@ mock:
 
 .PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 
 	sqlc-generate sqlc-init sqlc-compile 
-	test server mock
+	test test-coverage server mock

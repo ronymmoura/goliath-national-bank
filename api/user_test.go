@@ -49,7 +49,6 @@ func (e eqCreateUserParamsMatcher) String() string {
 }
 
 func EqCreateUserParams(arg db.CreateUserParams, password string) gomock.Matcher {
-	fmt.Printf("arg2: %v\n", arg)
 	return eqCreateUserParamsMatcher{arg, password}
 }
 
@@ -143,6 +142,23 @@ func TestCreateUserAPI(t *testing.T) {
 				"full_name": user.FullName,
 				"email":     user.Email,
 				"password":  "123",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					CreateUser(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "InvalidPassword",
+			body: gin.H{
+
+				"full_name": user.FullName,
+				"email":     user.Email,
+				"password":  util.RandomString(73),
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().

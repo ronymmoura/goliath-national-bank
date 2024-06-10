@@ -36,7 +36,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 
 	hashedPassword, err := util.HashPassword(req.Password)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
@@ -93,11 +93,7 @@ func (server *Server) getUser(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(req.UserID)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
+	userID := uuid.MustParse(req.UserID)
 
 	user, err := server.store.GetUser(ctx, userID)
 	if err != nil {

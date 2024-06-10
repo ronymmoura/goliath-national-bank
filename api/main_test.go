@@ -9,7 +9,7 @@ import (
 )
 
 func newTestServer(t *testing.T, store db.Store) *Server {
-	server := NewServer(store)
+	server, _ := NewServer(store)
 
 	return server
 }
