@@ -81,13 +81,19 @@
 				
 				<option value="file12">github.com/ronymmoura/goliath-national-bank/main.go (0.0%)</option>
 				
-				<option value="file13">github.com/ronymmoura/goliath-national-bank/util/currency.go (100.0%)</option>
+				<option value="file13">github.com/ronymmoura/goliath-national-bank/token/jwt_maker.go (95.7%)</option>
 				
-				<option value="file14">github.com/ronymmoura/goliath-national-bank/util/password.go (100.0%)</option>
+				<option value="file14">github.com/ronymmoura/goliath-national-bank/token/paseto_maker.go (100.0%)</option>
 				
-				<option value="file15">github.com/ronymmoura/goliath-national-bank/util/random.go (100.0%)</option>
+				<option value="file15">github.com/ronymmoura/goliath-national-bank/token/payload.go (100.0%)</option>
 				
-				<option value="file16">github.com/ronymmoura/goliath-national-bank/util/util.go (100.0%)</option>
+				<option value="file16">github.com/ronymmoura/goliath-national-bank/util/currency.go (100.0%)</option>
+				
+				<option value="file17">github.com/ronymmoura/goliath-national-bank/util/password.go (100.0%)</option>
+				
+				<option value="file18">github.com/ronymmoura/goliath-national-bank/util/random.go (100.0%)</option>
+				
+				<option value="file19">github.com/ronymmoura/goliath-national-bank/util/util.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -1595,7 +1601,181 @@ func main() <span class="cov0" title="0">{
 }
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package util
+		<pre class="file" id="file13" style="display: none">package token
+
+import (
+        "errors"
+        "fmt"
+        "time"
+
+        "github.com/dgrijalva/jwt-go"
+)
+
+const minSecretKeySize = 32
+
+var (
+        ErrInvalidJWTKeySize = fmt.Errorf("invalid key size: must be at least %d characters", minSecretKeySize)
+)
+
+type JWTMaker struct {
+        secretKey string
+}
+
+func NewJWTMaker(secretKey string) (Maker, error) <span class="cov8" title="1">{
+        if len(secretKey) &lt; minSecretKeySize </span><span class="cov8" title="1">{
+                return nil, ErrInvalidJWTKeySize
+        }</span>
+
+        <span class="cov8" title="1">return &amp;JWTMaker{secretKey}, nil</span>
+}
+
+func (maker *JWTMaker) CreateToken(username string, duration time.Duration) (string, error) <span class="cov8" title="1">{
+        payload, err := NewPayload(username, duration)
+        if err != nil </span><span class="cov8" title="1">{
+                return "", err
+        }</span>
+
+        <span class="cov8" title="1">jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
+        return jwtToken.SignedString([]byte(maker.secretKey))</span>
+}
+
+func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) <span class="cov8" title="1">{
+        keyFunc := func(token *jwt.Token) (interface{}, error) </span><span class="cov8" title="1">{
+                _, ok := token.Method.(*jwt.SigningMethodHMAC)
+                if !ok </span><span class="cov8" title="1">{
+                        return nil, ErrInvalidToken
+                }</span>
+
+                <span class="cov8" title="1">return []byte(maker.secretKey), nil</span>
+        }
+
+        <span class="cov8" title="1">jwtToken, err := jwt.ParseWithClaims(token, &amp;Payload{}, keyFunc)
+        if err != nil </span><span class="cov8" title="1">{
+                verr, ok := err.(*jwt.ValidationError)
+                if ok &amp;&amp; errors.Is(verr.Inner, ErrExpiredToken) </span><span class="cov8" title="1">{
+                        return nil, ErrExpiredToken
+                }</span>
+
+                <span class="cov8" title="1">return nil, ErrInvalidToken</span>
+        }
+
+        <span class="cov8" title="1">payload, ok := jwtToken.Claims.(*Payload)
+        if !ok </span><span class="cov0" title="0">{
+                return nil, ErrInvalidToken
+        }</span>
+
+        <span class="cov8" title="1">return payload, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package token
+
+import (
+        "fmt"
+        "time"
+
+        "golang.org/x/crypto/chacha20poly1305"
+
+        "github.com/o1egl/paseto"
+)
+
+var (
+        ErrInvalidKeySize = fmt.Errorf("invalid key size: must be exactly %d characters", chacha20poly1305.KeySize)
+)
+
+type PasetoMaker struct {
+        paseto       *paseto.V2
+        symmetricKey []byte
+}
+
+func NewPasetoMaker(symmetricKey string) (Maker, error) <span class="cov8" title="1">{
+        if len(symmetricKey) != chacha20poly1305.KeySize </span><span class="cov8" title="1">{
+                return nil, ErrInvalidKeySize
+        }</span>
+
+        <span class="cov8" title="1">maker := &amp;PasetoMaker{
+                paseto:       paseto.NewV2(),
+                symmetricKey: []byte(symmetricKey),
+        }
+
+        return maker, nil</span>
+}
+
+func (maker *PasetoMaker) CreateToken(username string, duration time.Duration) (string, error) <span class="cov8" title="1">{
+        payload, err := NewPayload(username, duration)
+        if err != nil </span><span class="cov8" title="1">{
+                return "", err
+        }</span>
+
+        <span class="cov8" title="1">return maker.paseto.Encrypt(maker.symmetricKey, payload, nil)</span>
+}
+
+func (maker *PasetoMaker) VerifyToken(token string) (*Payload, error) <span class="cov8" title="1">{
+        payload := &amp;Payload{}
+
+        err := maker.paseto.Decrypt(token, maker.symmetricKey, payload, nil)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, ErrInvalidToken
+        }</span>
+
+        <span class="cov8" title="1">err = payload.Valid()
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return payload, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file15" style="display: none">package token
+
+import (
+        "errors"
+        "time"
+
+        "github.com/google/uuid"
+)
+
+var (
+        ErrExpiredToken = errors.New("token has expired")
+        ErrInvalidToken = errors.New("token is invalid")
+        ErrEmptyUser    = errors.New("username is empty")
+)
+
+type Payload struct {
+        ID        uuid.UUID `json:"id"`
+        Username  string    `json:"username"`
+        IssuedAt  time.Time `json:"issued_at"`
+        ExpiredAt time.Time `json:"expired_at"`
+}
+
+func NewPayload(username string, duration time.Duration) (*Payload, error) <span class="cov8" title="1">{
+        if username == "" </span><span class="cov8" title="1">{
+                return nil, ErrEmptyUser
+        }</span>
+
+        <span class="cov8" title="1">tokenID := uuid.New()
+
+        payload := &amp;Payload{
+                ID:        tokenID,
+                Username:  username,
+                IssuedAt:  time.Now(),
+                ExpiredAt: time.Now().Add(duration),
+        }
+
+        return payload, nil</span>
+}
+
+func (payload *Payload) Valid() error <span class="cov8" title="1">{
+        if time.Now().After(payload.ExpiredAt) </span><span class="cov8" title="1">{
+                return ErrExpiredToken
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file16" style="display: none">package util
 
 const (
         USD = "USD"
@@ -1617,7 +1797,7 @@ func IsSupportedCurrency(currency string) bool <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package util
+		<pre class="file" id="file17" style="display: none">package util
 
 import (
         "fmt"
@@ -1639,7 +1819,7 @@ func CheckPassword(password string, hashedPassword string) error <span class="co
 }</span>
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package util
+		<pre class="file" id="file18" style="display: none">package util
 
 import (
         "fmt"
@@ -1689,7 +1869,7 @@ func RandomEmail() string <span class="cov8" title="1">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file16" style="display: none">package util
+		<pre class="file" id="file19" style="display: none">package util
 
 import (
         "github.com/spf13/viper"
