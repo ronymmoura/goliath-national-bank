@@ -77,7 +77,7 @@
 				
 				<option value="file10">github.com/ronymmoura/goliath-national-bank/db/sqlc/transfer.sql.go (85.7%)</option>
 				
-				<option value="file11">github.com/ronymmoura/goliath-national-bank/db/sqlc/user.sql.go (84.6%)</option>
+				<option value="file11">github.com/ronymmoura/goliath-national-bank/db/sqlc/user.sql.go (100.0%)</option>
 				
 				<option value="file12">github.com/ronymmoura/goliath-national-bank/main.go (0.0%)</option>
 				
@@ -1493,7 +1493,7 @@ LIMIT 1
 FOR NO KEY UPDATE
 `
 
-func (q *Queries) GetUserForUpdate(ctx context.Context, id uuid.UUID) (User, error) <span class="cov0" title="0">{
+func (q *Queries) GetUserForUpdate(ctx context.Context, id uuid.UUID) (User, error) <span class="cov8" title="1">{
         row := q.db.QueryRow(ctx, getUserForUpdate, id)
         var i User
         err := row.Scan(
