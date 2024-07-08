@@ -56,6 +56,10 @@ func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
 		return nil, ErrInvalidToken
 	}
 
+	return GetPayload(jwtToken)
+}
+
+func GetPayload(jwtToken *jwt.Token) (*Payload, error) {
 	payload, ok := jwtToken.Claims.(*Payload)
 	if !ok {
 		return nil, ErrInvalidToken

@@ -90,3 +90,28 @@ func TestInvalidJWTTokenKeySize(t *testing.T) {
 	require.EqualError(t, err, ErrInvalidJWTKeySize.Error())
 	require.Nil(t, maker)
 }
+
+type InvalidPayload struct {
+	ID        bool      `json:"id"`
+	IssuedAt  time.Time `json:"issued_at"`
+	ExpiredAt time.Time `json:"expired_at"`
+}
+
+func (payload *InvalidPayload) Valid() error {
+	return nil
+}
+
+func TestInvalidJWTTokenPayload(t *testing.T) {
+	invalidPayload := &InvalidPayload{
+		ID:        false,
+		IssuedAt:  time.Now(),
+		ExpiredAt: time.Now().Add(time.Minute),
+	}
+
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, invalidPayload)
+
+	payload, err := GetPayload(jwtToken)
+	require.Error(t, err)
+	require.EqualError(t, err, ErrInvalidToken.Error())
+	require.Nil(t, payload)
+}

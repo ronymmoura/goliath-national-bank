@@ -1,20 +1,35 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	db "github.com/ronymmoura/goliath-national-bank/db/sqlc"
+	"github.com/ronymmoura/goliath-national-bank/token"
+	"github.com/ronymmoura/goliath-national-bank/util"
 )
 
 type Server struct {
-	store  db.Store
-	router *gin.Engine
+	config     util.Config
+	store      db.Store
+	tokenMaker token.Maker
+	router     *gin.Engine
 }
 
-func NewServer(store db.Store) (server *Server, router *gin.Engine) {
-	server = &Server{store: store}
-	router = gin.Default()
+func NewServer(config util.Config, store db.Store) (server *Server, err error) {
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token maker: %w", err)
+	}
+
+	server = &Server{
+		config:     config,
+		store:      store,
+		tokenMaker: tokenMaker,
+	}
+	router := gin.Default()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("currency", validCurrency)
@@ -31,6 +46,10 @@ func NewServer(store db.Store) (server *Server, router *gin.Engine) {
 
 	server.router = router
 	return
+}
+
+func (server *Server) Start(address string) error {
+	return server.router.Run(address)
 }
 
 func errorResponse(err error) gin.H {

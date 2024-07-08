@@ -23,9 +23,12 @@ func main() {
 	}
 
 	store := db.NewStore(connPool)
-	_, router := api.NewServer(store)
+	server, err := api.NewServer(config, store)
+	if err != nil {
+		log.Fatal("cannot start server:", err)
+	}
 
-	err = router.Run(config.ServerAddress)
+	err = server.Start(config.ServerAddress)
 	if err != nil {
 		log.Fatal("cannot start server:", err)
 	}

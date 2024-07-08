@@ -57,15 +57,15 @@
 				
 				<option value="file0">github.com/ronymmoura/goliath-national-bank/api/account.go (100.0%)</option>
 				
-				<option value="file1">github.com/ronymmoura/goliath-national-bank/api/server.go (100.0%)</option>
+				<option value="file1">github.com/ronymmoura/goliath-national-bank/api/server.go (88.2%)</option>
 				
-				<option value="file2">github.com/ronymmoura/goliath-national-bank/api/transfer.go (0.0%)</option>
+				<option value="file2">github.com/ronymmoura/goliath-national-bank/api/transfer.go (100.0%)</option>
 				
 				<option value="file3">github.com/ronymmoura/goliath-national-bank/api/user.go (100.0%)</option>
 				
-				<option value="file4">github.com/ronymmoura/goliath-national-bank/api/validator.go (0.0%)</option>
+				<option value="file4">github.com/ronymmoura/goliath-national-bank/api/validator.go (66.7%)</option>
 				
-				<option value="file5">github.com/ronymmoura/goliath-national-bank/db/mock/store.go (26.2%)</option>
+				<option value="file5">github.com/ronymmoura/goliath-national-bank/db/mock/store.go (30.9%)</option>
 				
 				<option value="file6">github.com/ronymmoura/goliath-national-bank/db/sqlc/account.sql.go (91.4%)</option>
 				
@@ -81,7 +81,7 @@
 				
 				<option value="file12">github.com/ronymmoura/goliath-national-bank/main.go (0.0%)</option>
 				
-				<option value="file13">github.com/ronymmoura/goliath-national-bank/token/jwt_maker.go (95.7%)</option>
+				<option value="file13">github.com/ronymmoura/goliath-national-bank/token/jwt_maker.go (100.0%)</option>
 				
 				<option value="file14">github.com/ronymmoura/goliath-national-bank/token/paseto_maker.go (100.0%)</option>
 				
@@ -212,20 +212,35 @@ func (server *Server) getAccount(ctx *gin.Context) <span class="cov8" title="1">
 		<pre class="file" id="file1" style="display: none">package api
 
 import (
+        "fmt"
+
         "github.com/gin-gonic/gin"
         "github.com/gin-gonic/gin/binding"
         "github.com/go-playground/validator/v10"
         db "github.com/ronymmoura/goliath-national-bank/db/sqlc"
+        "github.com/ronymmoura/goliath-national-bank/token"
+        "github.com/ronymmoura/goliath-national-bank/util"
 )
 
 type Server struct {
-        store  db.Store
-        router *gin.Engine
+        config     util.Config
+        store      db.Store
+        tokenMaker token.Maker
+        router     *gin.Engine
 }
 
-func NewServer(store db.Store) (server *Server, router *gin.Engine) <span class="cov8" title="1">{
-        server = &amp;Server{store: store}
-        router = gin.Default()
+func NewServer(config util.Config, store db.Store) (server *Server, err error) <span class="cov8" title="1">{
+        tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("cannot create token maker: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">server = &amp;Server{
+                config:     config,
+                store:      store,
+                tokenMaker: tokenMaker,
+        }
+        router := gin.Default()
 
         if v, ok := binding.Validator.Engine().(*validator.Validate); ok </span><span class="cov8" title="1">{
                 v.RegisterValidation("currency", validCurrency)
@@ -243,6 +258,10 @@ func NewServer(store db.Store) (server *Server, router *gin.Engine) <span class=
         server.router = router
         return</span>
 }
+
+func (server *Server) Start(address string) error <span class="cov0" title="0">{
+        return server.router.Run(address)
+}</span>
 
 func errorResponse(err error) gin.H <span class="cov8" title="1">{
         return gin.H{"error": err.Error()}
@@ -267,56 +286,56 @@ type TransferRequest struct {
         Currency      string `json:"currency" binding:"required,currency"`
 }
 
-func (server *Server) createTransfer(ctx *gin.Context) <span class="cov0" title="0">{
+func (server *Server) createTransfer(ctx *gin.Context) <span class="cov8" title="1">{
         var req TransferRequest
 
-        if err := ctx.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+        if err := ctx.ShouldBindJSON(&amp;req); err != nil </span><span class="cov8" title="1">{
                 ctx.JSON(http.StatusBadRequest, errorResponse(err))
                 return
         }</span>
 
-        <span class="cov0" title="0">if !server.validAccount(ctx, req.FromAccountID, req.Currency) </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if !server.validAccount(ctx, req.FromAccountID, req.Currency) </span><span class="cov8" title="1">{
                 return
         }</span>
 
-        <span class="cov0" title="0">if !server.validAccount(ctx, req.ToAccountID, req.Currency) </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if !server.validAccount(ctx, req.ToAccountID, req.Currency) </span><span class="cov8" title="1">{
                 return
         }</span>
 
-        <span class="cov0" title="0">arg := db.TransferTxParams{
+        <span class="cov8" title="1">arg := db.TransferTxParams{
                 FromAccountID: req.FromAccountID,
                 ToAccountID:   req.ToAccountID,
                 Amount:        req.Amount,
         }
 
         result, err := server.store.TransferTx(ctx, arg)
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov8" title="1">{
                 ctx.JSON(http.StatusInternalServerError, errorResponse(err))
                 return
         }</span>
 
-        <span class="cov0" title="0">ctx.JSON(http.StatusCreated, result)</span>
+        <span class="cov8" title="1">ctx.JSON(http.StatusCreated, result)</span>
 }
 
-func (server *Server) validAccount(ctx *gin.Context, accountID int64, currency string) bool <span class="cov0" title="0">{
+func (server *Server) validAccount(ctx *gin.Context, accountID int64, currency string) bool <span class="cov8" title="1">{
         account, err := server.store.GetAccount(ctx, accountID)
-        if err != nil </span><span class="cov0" title="0">{
-                if err == pgx.ErrNoRows </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov8" title="1">{
+                if err == pgx.ErrNoRows </span><span class="cov8" title="1">{
                         ctx.JSON(http.StatusNotFound, errorResponse(err))
                         return false
                 }</span>
 
-                <span class="cov0" title="0">ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+                <span class="cov8" title="1">ctx.JSON(http.StatusInternalServerError, errorResponse(err))
                 return false</span>
         }
 
-        <span class="cov0" title="0">if account.Currency != currency </span><span class="cov0" title="0">{
-                err := fmt.Errorf("account [%d] currenty mismatch: %s vs %s", account.ID, account.Currency, currency)
+        <span class="cov8" title="1">if account.Currency != currency </span><span class="cov8" title="1">{
+                err := fmt.Errorf("account [%d] currency mismatch: %s vs %s", account.ID, account.Currency, currency)
                 ctx.JSON(http.StatusBadRequest, errorResponse(err))
                 return false
         }</span>
 
-        <span class="cov0" title="0">return true</span>
+        <span class="cov8" title="1">return true</span>
 }
 </pre>
 		
@@ -447,8 +466,8 @@ import (
         "github.com/ronymmoura/goliath-national-bank/util"
 )
 
-var validCurrency validator.Func = func(fieldLevel validator.FieldLevel) bool <span class="cov0" title="0">{
-        if currency, ok := fieldLevel.Field().Interface().(string); ok </span><span class="cov0" title="0">{
+var validCurrency validator.Func = func(fieldLevel validator.FieldLevel) bool <span class="cov8" title="1">{
+        if currency, ok := fieldLevel.Field().Interface().(string); ok </span><span class="cov8" title="1">{
                 return util.IsSupportedCurrency(currency)
         }</span>
 
@@ -748,7 +767,7 @@ func (mr *MockStoreMockRecorder) ListTransfers(arg0, arg1 interface{}) *gomock.C
 }</span>
 
 // TransferTx mocks base method.
-func (m *MockStore) TransferTx(arg0 context.Context, arg1 db.TransferTxParams) (db.TransferTxResult, error) <span class="cov0" title="0">{
+func (m *MockStore) TransferTx(arg0 context.Context, arg1 db.TransferTxParams) (db.TransferTxResult, error) <span class="cov8" title="1">{
         m.ctrl.T.Helper()
         ret := m.ctrl.Call(m, "TransferTx", arg0, arg1)
         ret0, _ := ret[0].(db.TransferTxResult)
@@ -757,7 +776,7 @@ func (m *MockStore) TransferTx(arg0 context.Context, arg1 db.TransferTxParams) (
 }</span>
 
 // TransferTx indicates an expected call of TransferTx.
-func (mr *MockStoreMockRecorder) TransferTx(arg0, arg1 interface{}) *gomock.Call <span class="cov0" title="0">{
+func (mr *MockStoreMockRecorder) TransferTx(arg0, arg1 interface{}) *gomock.Call <span class="cov8" title="1">{
         mr.mock.ctrl.T.Helper()
         return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransferTx", reflect.TypeOf((*MockStore)(nil).TransferTx), arg0, arg1)
 }</span>
@@ -1591,9 +1610,12 @@ func main() <span class="cov0" title="0">{
         }</span>
 
         <span class="cov0" title="0">store := db.NewStore(connPool)
-        _, router := api.NewServer(store)
+        server, err := api.NewServer(config, store)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("cannot start server:", err)
+        }</span>
 
-        err = router.Run(config.ServerAddress)
+        <span class="cov0" title="0">err = server.Start(config.ServerAddress)
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatal("cannot start server:", err)
         }</span>
@@ -1659,8 +1681,12 @@ func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) <span class="
                 <span class="cov8" title="1">return nil, ErrInvalidToken</span>
         }
 
-        <span class="cov8" title="1">payload, ok := jwtToken.Claims.(*Payload)
-        if !ok </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">return GetPayload(jwtToken)</span>
+}
+
+func GetPayload(jwtToken *jwt.Token) (*Payload, error) <span class="cov8" title="1">{
+        payload, ok := jwtToken.Claims.(*Payload)
+        if !ok </span><span class="cov8" title="1">{
                 return nil, ErrInvalidToken
         }</span>
 
@@ -1872,17 +1898,21 @@ func RandomEmail() string <span class="cov8" title="1">{
 		<pre class="file" id="file19" style="display: none">package util
 
 import (
+        "time"
+
         "github.com/spf13/viper"
 )
 
 type Config struct {
-        Environment   string `mapstructure:"ENVIRONMENT"`
-        DBSource      string `mapstructure:"DB_SOURCE"`
-        MigrationURL  string `mapstructure:"MIGRATION_URL"`
-        ServerAddress string `mapstructure:"SERVER_ADDRESS"`
+        Environment         string        `mapstructure:"ENVIRONMENT"`
+        DBSource            string        `mapstructure:"DB_SOURCE"`
+        MigrationURL        string        `mapstructure:"MIGRATION_URL"`
+        ServerAddress       string        `mapstructure:"SERVER_ADDRESS"`
+        TokenSymmetricKey   string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
+        AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 }
 
-func LoadConfig(path string) (config *Config, err error) <span class="cov8" title="1">{
+func LoadConfig(path string) (config Config, err error) <span class="cov8" title="1">{
         viper.AddConfigPath(path)
         viper.SetConfigName("app")
         viper.SetConfigType("env")
