@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/ronymmoura/goliath-national-bank/util"
 	"github.com/stretchr/testify/require"
 )
@@ -12,13 +13,13 @@ func TestPasetoMaker(t *testing.T) {
 	maker, err := NewPasetoMaker(util.RandomString(32))
 	require.NoError(t, err)
 
-	username := util.RandomEmail()
+	id := uuid.New()
 	duration := time.Minute
 
 	issuedAt := time.Now()
 	expiredAt := issuedAt.Add(duration)
 
-	token, err := maker.CreateToken(username, duration)
+	token, err := maker.CreateToken(id, duration)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
@@ -26,8 +27,7 @@ func TestPasetoMaker(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, payload)
 
-	require.NotZero(t, payload.ID)
-	require.Equal(t, username, payload.Username)
+	require.Equal(t, id, payload.ID)
 	require.WithinDuration(t, issuedAt, payload.IssuedAt, time.Second)
 	require.WithinDuration(t, expiredAt, payload.ExpiredAt, time.Second)
 }
@@ -36,7 +36,7 @@ func TestExpiredPasetoToken(t *testing.T) {
 	maker, err := NewPasetoMaker(util.RandomString(32))
 	require.NoError(t, err)
 
-	token, err := maker.CreateToken(util.RandomEmail(), -time.Minute)
+	token, err := maker.CreateToken(uuid.New(), -time.Minute)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
@@ -67,7 +67,7 @@ func TestInvalidPasetoTokenEmptyUser(t *testing.T) {
 	maker, err := NewPasetoMaker(util.RandomString(32))
 	require.NoError(t, err)
 
-	token, err := maker.CreateToken("", time.Minute)
+	token, err := maker.CreateToken(uuid.Nil, time.Minute)
 	require.Error(t, err)
 	require.EqualError(t, err, ErrEmptyUser.Error())
 	require.Empty(t, token)

@@ -1,18 +1,19 @@
 package api
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	db "github.com/ronymmoura/goliath-national-bank/db/sqlc"
+	"github.com/ronymmoura/goliath-national-bank/token"
 )
 
 type CreateAccountRequest struct {
-	UserID   uuid.UUID `json:"user_id" binding:"required"`
-	Currency string    `json:"currency" binding:"required,oneof=USD EUR CAD BRL"`
+	Currency string `json:"currency" binding:"required,oneof=USD EUR CAD BRL"`
 }
 
 func (server *Server) createAccount(ctx *gin.Context) {
@@ -23,8 +24,11 @@ func (server *Server) createAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	fmt.Printf("%s", authPayload.ID)
+
 	arg := db.CreateAccountParams{
-		UserID:   req.UserID,
+		UserID:   authPayload.ID,
 		Currency: req.Currency,
 		Balance:  0,
 	}
@@ -59,7 +63,10 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
 	arg := db.ListAccountsParams{
+		UserID: authPayload.ID,
 		Limit:  req.PageSize,
 		Offset: (req.Page - 1) * req.PageSize,
 	}
@@ -74,7 +81,7 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 }
 
 type GetAccountRequest struct {
-	AccountID int64 `uri:"account_id" binding:"required,min=1"`
+	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
 func (server *Server) getAccount(ctx *gin.Context) {
@@ -85,7 +92,7 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		return
 	}
 
-	account, err := server.store.GetAccount(ctx, req.AccountID)
+	account, err := server.store.GetAccount(ctx, req.ID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -93,6 +100,13 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		}
 
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if account.UserID != authPayload.ID {
+		err := errors.New("account doesn't belong to the authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
